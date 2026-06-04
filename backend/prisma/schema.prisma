@@ -1,0 +1,221 @@
+// Odontotech — Prisma schema (SQLite)
+// NOTE: SQLite does not support native enums or scalar lists.
+//       Roles/statuses are stored as Strings (validated by Zod).
+//       Arrays (allergies, conditions) are stored as JSON strings.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// Users of the system. Dentists are Users with role = "DENTIST".
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("DENTIST") // ADMIN | DENTIST
+  // Dentist-specific presentation fields (used by the agenda/calendar)
+  specialty    String? // e.g. "Ortodontia"
+  color        String? // UI accent color, e.g. "blue"
+  initials     String? // e.g. "MC"
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  appointments  Appointment[]  @relation("DentistAppointments")
+  exams         Exam[]
+
+  @@index([role])
+}
+
+/// Refresh tokens persisted in DB so they can be rotated / revoked.
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Insurance / dental plan (convênio).
+model Plan {
+  id              String   @id @default(cuid())
+  name            String
+  coveragePercent Int      @default(0)
+  status          String   @default("ativo") // ativo | inativo
+  gracePeriod     String? // "carência" — e.g. "30 dias"
+  color           String? // UI accent color
+  serviceCount    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  patients Patient[]
+}
+
+/// Patient (paciente).
+model Patient {
+  id               String   @id @default(cuid())
+  name             String
+  cpf              String   @unique
+  rg               String?
+  birthdate        DateTime
+  gender           String? // Feminino | Masculino | Outro
+  phone            String
+  email            String?
+  cep              String?
+  address          String?
+  city             String?
+  uf               String?  @default("SP")
+  status           String   @default("ativo") // ativo | inativo
+  planId           String?
+  plan             Plan?    @relation(fields: [planId], references: [id])
+  allergies        String   @default("[]") // JSON array of strings
+  conditions       String   @default("[]") // JSON array of strings
+  observations     String? // clinical notes (frontend "obs")
+  isMinor          Boolean  @default(false)
+  responsibleParty String? // legal guardian name (frontend "responsible")
+  responsiblePhone String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  appointments Appointment[]
+  exams        Exam[]
+  dentalRecord DentalRecord?
+
+  @@index([status])
+  @@index([planId])
+}
+
+/// Dental service / procedure.
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float    @default(0)
+  duration    Int      @default(30) // minutes
+  category    String // e.g. "Endodontia"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  appointments        Appointment[]        @relation("PrimaryService")
+  appointmentServices AppointmentService[]
+
+  @@index([category])
+}
+
+/// Appointment (consulta). Stores datetime + durationMin; the API also
+/// exposes derived date/hour/min/dur fields for the calendar frontend.
+model Appointment {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentistId   String
+  dentist     User     @relation("DentistAppointments", fields: [dentistId], references: [id])
+  serviceId   String? // primary procedure
+  service     Service? @relation("PrimaryService", fields: [serviceId], references: [id])
+  datetime    DateTime
+  durationMin Int      @default(30)
+  status      String   @default("agendado") // agendado | confirmado | concluido | cancelado | atendimento
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services AppointmentService[]
+
+  @@index([datetime])
+  @@index([dentistId])
+  @@index([status])
+  @@index([patientId])
+}
+
+/// Join table: services attached to an appointment ("Associar à consulta").
+model AppointmentService {
+  id            String   @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       Service     @relation(fields: [serviceId], references: [id])
+  priceOverride Float?
+  quantity      Int      @default(1)
+  createdAt     DateTime @default(now())
+
+  @@unique([appointmentId, serviceId])
+}
+
+/// Exam (radiografia, tomografia, etc.).
+model Exam {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentistId   String?
+  dentist     User?    @relation(fields: [dentistId], references: [id])
+  type        String // "Radiografia Panorâmica", etc.
+  description String?
+  notes       String? // laudo
+  date        DateTime
+  status      String   @default("pendente") // pendente | concluido
+  filePath    String? // convenience: path of the most recent file
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  files ExamFile[]
+
+  @@index([patientId])
+  @@index([status])
+}
+
+/// A single uploaded file attached to an exam.
+model ExamFile {
+  id           String   @id @default(cuid())
+  examId       String
+  exam         Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  filename     String // stored filename on disk
+  originalName String
+  path         String // relative path, e.g. uploads/xyz.jpg
+  mimeType     String?
+  size         Int?
+  createdAt    DateTime @default(now())
+
+  @@index([examId])
+}
+
+/// Dental record / prontuário (one per patient).
+model DentalRecord {
+  id        String   @id @default(cuid())
+  patientId String   @unique
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// System / clinic configuration (singleton row, id = "singleton").
+model ClinicSettings {
+  id                     String   @id @default("singleton")
+  clinicName             String   @default("Odontotech")
+  unit                   String?
+  cnpj                   String?
+  phone                  String?
+  email                  String?
+  address                String?
+  // Branding / UI defaults (mirrors the frontend "Tweaks" panel)
+  primaryColor           String   @default("#1C6DD0")
+  radius                 String   @default("default") // sharp | default | rounded
+  density                String   @default("comfortable") // comfortable | compact
+  theme                  String   @default("light") // light | dark
+  // Agenda defaults
+  businessHoursStart     String   @default("08:00")
+  businessHoursEnd       String   @default("19:00")
+  appointmentSlotMinutes Int      @default(30)
+  timezone               String   @default("America/Sao_Paulo")
+  updatedAt              DateTime @updatedAt
+}

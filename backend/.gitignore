@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.log
+
+# Env
+.env
+
+# SQLite database files
+prisma/*.db
+prisma/*.db-journal
+*.db
+*.db-journal
+
+# Uploaded files (keep the folder, ignore contents)
+uploads/*
+!uploads/.gitkeep
