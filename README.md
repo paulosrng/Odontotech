@@ -419,6 +419,24 @@ O frontend é um **protótipo SPA estático** e possui características intencio
 - **Forma recomendada de execução:** deixar o próprio backend Express servir o frontend (mesma origem, sem configuração de CORS adicional). Acesse `http://localhost:4000`.
 - **Alternativa:** servir a pasta `frontend/` com qualquer servidor estático (ex.: `npx serve frontend`), mas nesse caso o CORS_ORIGIN do backend deve incluir a origem usada.
 
+
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-25-42 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/d25f6f75-ff2b-4ea7-8da1-a2314e53b186" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-25-31 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/10617636-553c-4edd-b2e3-661510a9b3ca" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-25-20 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/af3ef88b-fe03-47bf-848a-3e7d4c90f0de" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-25-07 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/33dd0afe-05c8-4f76-9204-7cb27e7b898a" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-24-52 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/d250a403-c1ec-440e-ac92-2857bc0a1c9c" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-24-31 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/393afdbf-b7c7-4567-90e5-f7039ceb1fff" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-24-04 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/0a7de8f7-87ed-45b0-87a1-155ab5a6e0ec" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-23-35 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/3f5ad895-dc67-4753-a5a8-55ed493048fb" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-23-24 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/928f14bc-0dbb-4bcd-95eb-d531fc2d0927" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-23-04 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/55966478-8829-419a-9bb7-1ba9dfa44ef1" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-22-51 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/d918fb2b-2eb2-44ab-9459-aa485301b2f2" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-22-34 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/39e6a4bd-10c6-4d7b-8bb1-7973365273b6" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-22-17 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/03b1868e-108b-411f-8b25-3e657f803f6c" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-21-53 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/9875f7f2-2f72-4a01-8566-e3da5b88ef26" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-21-13 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/4d605381-af52-48be-afc8-0df4bda7c019" />
+<img width="1868" height="1070" alt="Screenshot 2026-06-07 at 19-21-06 Odontotech — Sistema de Gestão Odontológica" src="https://github.com/user-attachments/assets/5544ba8c-0a12-4372-8220-2794c42a1494" />
+
 ---
 
 ## Licença
