@@ -4,6 +4,8 @@ import { NotFound } from '../../shared/errors';
 import type { PlanDTO } from './types';
 
 export function serializePlan(p: Plan): PlanDTO {
+  let serviceIds: string[] = [];
+  try { serviceIds = JSON.parse(p.serviceIds); } catch { /* keep [] */ }
   return {
     id: p.id,
     name: p.name,
@@ -13,8 +15,9 @@ export function serializePlan(p: Plan): PlanDTO {
     gracePeriod: p.gracePeriod,
     carencia: p.gracePeriod,
     color: p.color,
-    serviceCount: p.serviceCount,
-    services: p.serviceCount,
+    serviceCount: serviceIds.length || p.serviceCount,
+    services: serviceIds.length || p.serviceCount,
+    serviceIds,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };

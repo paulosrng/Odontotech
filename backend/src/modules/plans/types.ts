@@ -10,6 +10,7 @@ export interface PlanDTO {
   color: string | null;
   serviceCount: number;
   services: number; // frontend alias (count)
+  serviceIds: string[];
   createdAt: string;
   updatedAt: string;
 }

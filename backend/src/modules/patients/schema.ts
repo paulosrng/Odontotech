@@ -91,14 +91,55 @@ export const createPatientSchema = baseObject
   .refine((d) => d.birthdate || d.birth, { message: 'Data de nascimento obrigatória.', path: ['birthdate'] })
   .transform(normalize);
 
-// Update: all fields optional (partial), still normalized.
+// Update: all fields optional (partial). Only fields actually present in the
+// request body are included in the output — the same approach used by
+// updateServiceSchema and updatePlanSchema — so absent fields never overwrite
+// existing DB values with defaults (e.g. planId would be set to null, status to
+// 'ativo', uf to 'SP', isMinor to false if we ran normalize() unconditionally).
 export const updatePatientSchema = baseObject.partial().transform((d) => {
-  const out = normalize(d as z.infer<typeof baseObject>);
-  // strip undefined so we don't overwrite with nulls unintentionally
   const cleaned: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(out)) {
-    if (v !== undefined) cleaned[k] = v;
-  }
+
+  if (d.name !== undefined) cleaned.name = d.name;
+  if (d.cpf !== undefined) cleaned.cpf = d.cpf;
+  if (d.rg !== undefined) cleaned.rg = d.rg ?? null;
+
+  // birthdate: prefer the "birth" (YYYY-MM-DD) string field
+  if (d.birth !== undefined) cleaned.birthdate = parseYmdLocal(d.birth);
+  else if (d.birthdate !== undefined) cleaned.birthdate = d.birthdate;
+
+  if (d.gender !== undefined) cleaned.gender = d.gender ?? null;
+  if (d.phone !== undefined) cleaned.phone = d.phone;
+  if (d.email !== undefined) cleaned.email = d.email || null;
+  if (d.cep !== undefined) cleaned.cep = d.cep ?? null;
+  if (d.address !== undefined) cleaned.address = d.address ?? null;
+  if (d.city !== undefined) cleaned.city = d.city ?? null;
+  if (d.uf !== undefined) cleaned.uf = d.uf ?? null;
+  if (d.status !== undefined) cleaned.status = d.status;
+  if (d.planId !== undefined) cleaned.planId = d.planId || null;
+
+  // allergies / conditions — support both array and comma-string aliases
+  const allergies = d.allergies ?? (d.allergiesText
+    ? d.allergiesText.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined);
+  if (allergies !== undefined) cleaned.allergies = allergies;
+
+  const conditions = d.conditions ?? (d.conditionsText
+    ? d.conditionsText.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined);
+  if (conditions !== undefined) cleaned.conditions = conditions;
+
+  // observations — support the "obs" alias
+  if (d.observations !== undefined || d.obs !== undefined)
+    cleaned.observations = d.observations ?? d.obs ?? null;
+
+  if (d.isMinor !== undefined) cleaned.isMinor = d.isMinor;
+
+  // responsibleParty — support the "responsible" alias
+  if (d.responsibleParty !== undefined || d.responsible !== undefined)
+    cleaned.responsibleParty = d.responsibleParty ?? d.responsible ?? null;
+
+  if (d.responsiblePhone !== undefined) cleaned.responsiblePhone = d.responsiblePhone ?? null;
+
   return cleaned;
 });
 

@@ -12,16 +12,19 @@ const base = z.object({
   color: z.string().optional().nullable(),
   serviceCount: z.coerce.number().int().min(0).optional(),
   services: z.coerce.number().int().min(0).optional(), // frontend alias (count)
+  serviceIds: z.array(z.string()).optional(),
 });
 
 function normalize(d: z.infer<typeof base>) {
+  const ids = d.serviceIds ?? [];
   return {
     name: d.name,
     coveragePercent: d.coveragePercent ?? d.coverage ?? 0,
     status: d.status ?? 'ativo',
     gracePeriod: d.gracePeriod ?? d.carencia ?? null,
     color: d.color ?? 'blue',
-    serviceCount: d.serviceCount ?? d.services ?? 0,
+    serviceCount: ids.length > 0 ? ids.length : (d.serviceCount ?? d.services ?? 0),
+    serviceIds: JSON.stringify(ids),
   };
 }
 
@@ -36,6 +39,7 @@ export const updatePlanSchema = base.partial().transform((d) => {
   if (d.gracePeriod !== undefined || d.carencia !== undefined) cleaned.gracePeriod = out.gracePeriod;
   if (d.color !== undefined) cleaned.color = out.color;
   if (d.serviceCount !== undefined || d.services !== undefined) cleaned.serviceCount = out.serviceCount;
+  if (d.serviceIds !== undefined) { cleaned.serviceIds = out.serviceIds; cleaned.serviceCount = out.serviceCount; }
   return cleaned;
 });
 
