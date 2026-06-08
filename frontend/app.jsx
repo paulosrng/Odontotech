@@ -103,6 +103,7 @@
       dashboard: () => <window.Dashboard navigate={navigate} appts={appts} />,
       agenda: () => <window.Agenda navigate={navigate} appts={appts} setAppts={setAppts} />,
       'new-appointment': () => <window.CreateAppointment navigate={navigate} appts={appts} setAppts={setAppts} preset={params} />,
+      'edit-appointment': () => <window.EditAppointment navigate={navigate} appts={appts} setAppts={setAppts} params={params} />,
       patients: () => <window.PatientList navigate={navigate} patients={patients} setPatients={setPatients} />,
       'new-patient': () => <window.PatientForm navigate={navigate} patients={patients} setPatients={setPatients} />,
       'edit-patient': () => <window.PatientForm navigate={navigate} patients={patients} setPatients={setPatients} editId={params.id} />,

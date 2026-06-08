@@ -137,9 +137,12 @@
 
     const save = async (pl) => {
       try {
-        const saved = pl._new ? await window.API.createPlan(pl) : await window.API.updatePlan(pl.id, pl);
-        setPlans(list => pl._new ? [...list, saved] : list.map(p => p.id === saved.id ? saved : p));
-        window.toast(pl._new ? 'Plano cadastrado!' : 'Plano atualizado!', 'success');
+        // Strip canonical backend aliases so the frontend aliases (coverage/carencia/services)
+        // take precedence in the backend normalize() and the slider value is not ignored.
+        const { id, _new, coveragePercent, gracePeriod, serviceCount, createdAt, updatedAt, ...payload } = pl;
+        const saved = _new ? await window.API.createPlan(payload) : await window.API.updatePlan(id, payload);
+        setPlans(list => _new ? [...list, saved] : list.map(p => p.id === saved.id ? saved : p));
+        window.toast(_new ? 'Plano cadastrado!' : 'Plano atualizado!', 'success');
         setEditing(null);
       } catch (err) { window.toast(err.message || 'Erro ao salvar plano', 'error'); }
     };
@@ -195,9 +198,13 @@
   }
 
   function PlanDrawer({ plan, onClose, onSave }) {
-    const [f, setF] = useState({ ...plan });
+    const [f, setF] = useState({ ...plan, serviceIds: plan.serviceIds || [] });
     const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-    const linked = window.DATA.services.slice(0, 6);
+    const allServices = window.DATA.services;
+    const toggleService = (id) => setF(p => {
+      const ids = p.serviceIds || [];
+      return { ...p, serviceIds: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id] };
+    });
     return (
       <Drawer title={plan._new ? 'Novo plano' : f.name || 'Editar plano'} subtitle="Convênio odontológico" onClose={onClose} width={460}
         footer={<><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button variant="primary" icon="check" onClick={() => onSave(f)} disabled={!f.name}>Salvar plano</Button></>}>
@@ -208,23 +215,32 @@
             <div className="progress" style={{ marginTop: 6 }}><i style={{ width: `${f.coverage}%` }} /></div>
           </Field>
           <div className="form-grid">
-            <Field label="Carência"><Select value={f.carencia} onChange={e => set('carencia', e.target.value)}>{['—', '30 dias', '60 dias', '90 dias', '180 dias'].map(c => <option key={c}>{c}</option>)}</Select></Field>
+            <Field label="Carência"><Select value={f.carencia ?? '—'} onChange={e => set('carencia', e.target.value === '—' ? null : e.target.value)}>{['—', '30 dias', '60 dias', '90 dias', '180 dias'].map(c => <option key={c}>{c}</option>)}</Select></Field>
             <Field label="Status"><Select value={f.status} onChange={e => set('status', e.target.value)}><option value="ativo">Ativo</option><option value="inativo">Inativo</option></Select></Field>
           </div>
+          <Field label="Cor do convênio">
+            <div style={{ display: 'flex', gap: 10, marginTop: 2 }}>
+              {['blue', 'teal', 'violet', 'rose', 'amber', 'green'].map(c => (
+                <button key={c} type="button" onClick={() => set('color', c)}
+                  title={c}
+                  style={{ width: 28, height: 28, borderRadius: '50%', border: f.color === c ? '3px solid var(--text)' : '2px solid var(--border)', background: `var(--${c})`, cursor: 'pointer', outline: 'none' }} />
+              ))}
+            </div>
+          </Field>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div className="eyebrow">Serviços cobertos</div>
-              <Button variant="ghost" size="sm" icon="plus" onClick={() => window.toast('Adicionar serviço ao plano')}>Adicionar</Button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {linked.map(s => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 'var(--r-md)' }}>
-                  <span className="stat-ico" style={{ width: 30, height: 30, background: 'var(--surface-2)', color: 'var(--text-2)' }}><Icon name="tooth" size={15} /></span>
-                  <div style={{ flex: 1 }}><div style={{ fontWeight: 600, fontSize: 13 }}>{s.name}</div><div className="muted-3" style={{ fontSize: 11.5 }}>Coberto em {f.coverage}% · você paga {window.fmtMoney(s.price * (1 - f.coverage / 100))}</div></div>
-                  <Switch checked onChange={() => {}} />
-                </div>
-              ))}
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Serviços cobertos ({(f.serviceIds || []).length})</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto' }}>
+              {allServices.map(s => {
+                const checked = (f.serviceIds || []).includes(s.id);
+                return (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: `1px solid ${checked ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 'var(--r-md)', cursor: 'pointer', background: checked ? 'var(--primary-soft)' : 'transparent' }} onClick={() => toggleService(s.id)}>
+                    <span className="stat-ico" style={{ width: 30, height: 30, background: 'var(--surface-2)', color: 'var(--text-2)' }}><Icon name="tooth" size={15} /></span>
+                    <div style={{ flex: 1 }}><div style={{ fontWeight: 600, fontSize: 13 }}>{s.name}</div><div className="muted-3" style={{ fontSize: 11.5 }}>{checked ? `Coberto em ${f.coverage}% · paciente paga ${window.fmtMoney(s.price * (1 - f.coverage / 100))}` : window.fmtMoney(s.price)}</div></div>
+                    <Switch checked={checked} onChange={() => toggleService(s.id)} />
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

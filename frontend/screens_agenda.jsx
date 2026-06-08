@@ -20,7 +20,7 @@
     return (
       <Modal title="Detalhes da consulta" onClose={onClose} width={480}
         footer={<>
-          <Button variant="ghost" icon="edit" onClick={() => { onClose(); window.toast('Editar consulta'); }}>Editar</Button>
+          <Button variant="ghost" icon="edit" onClick={() => { onClose(); navigate('edit-appointment', { id: appt.id }); }}>Editar</Button>
           <div style={{ flex: 1 }} />
           {appt.status !== 'cancelado' && <Button variant="danger-soft" icon="x" onClick={() => { onStatus(appt.id, 'cancelado'); onClose(); window.toast('Consulta cancelada', 'warn'); }}>Cancelar</Button>}
           {appt.status === 'agendado' && <Button variant="primary" icon="check" onClick={() => { onStatus(appt.id, 'confirmado'); onClose(); window.toast('Consulta confirmada', 'success'); }}>Confirmar</Button>}
@@ -330,5 +330,123 @@
     );
   }
 
-  Object.assign(window, { Agenda, CreateAppointment });
+  function EditAppointment({ navigate, appts, setAppts, params }) {
+    const { patients, dentists, services } = window.DATA;
+    const appt = appts.find(a => a.id === params.id);
+
+    const [q, setQ] = useState('');
+    const [patientId, setPatientId] = useState(appt ? appt.patientId : '');
+    const [dentistId, setDentistId] = useState(appt ? appt.dentistId : (dentists[0] || {}).id || '');
+    const [serviceId, setServiceId] = useState(appt ? (appt.serviceId || '') : '');
+    const [date, setDate] = useState(appt ? appt.date : '');
+    const [time, setTime] = useState(appt ? `${String(appt.hour).padStart(2, '0')}:${String(appt.min).padStart(2, '0')}` : '09:00');
+    const [notes, setNotes] = useState(appt ? (appt.notes || '') : '');
+    const [status, setStatus] = useState(appt ? appt.status : 'agendado');
+
+    if (!appt) return (
+      <div className="page fade-in">
+        <div className="page-head"><h1 className="h1">Consulta não encontrada</h1></div>
+        <Button variant="ghost" onClick={() => navigate('agenda')}>Voltar à agenda</Button>
+      </div>
+    );
+
+    const results = useMemo(() => !q ? [] : patients.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.cpf.includes(q)).slice(0, 5), [q]);
+    const patient = patients.find(p => p.id === patientId);
+    const service = services.find(s => s.id === serviceId);
+    const dentist = dentists.find(d => d.id === dentistId);
+
+    const save = async () => {
+      if (!patientId) return window.toast('Selecione um paciente', 'error');
+      try {
+        const saved = await window.API.updateAppointment(appt.id, { patientId, dentistId, serviceId: serviceId || null, date, time, status, notes });
+        setAppts(list => list.map(a => a.id === saved.id ? saved : a));
+        window.toast('Consulta atualizada!', 'success');
+        navigate('agenda');
+      } catch (err) {
+        window.toast(err.message || 'Erro ao atualizar consulta', 'error');
+      }
+    };
+
+    return (
+      <div className="page fade-in" style={{ maxWidth: 1100 }}>
+        <div className="breadcrumb"><a onClick={() => navigate('agenda')}>Agenda</a><Icon name="chevronRight" size={13} /><span>Editar consulta</span></div>
+        <div className="page-head">
+          <div><h1 className="h1">Editar consulta</h1><div className="sub">Altere os dados do agendamento.</div></div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 22, alignItems: 'start' }}>
+          <Card className="card-pad">
+            <div className="form-section-title"><span className="num">1</span>Paciente</div>
+            {!patient ? (
+              <div style={{ position: 'relative', marginTop: 12 }}>
+                <Input lead={<Icon name="search" size={17} />} placeholder="Buscar por nome ou CPF..." value={q} onChange={e => setQ(e.target.value)} />
+                {results.length > 0 && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-pop)', padding: 6 }}>
+                    {results.map(p => (
+                      <button key={p.id} onClick={() => { setPatientId(p.id); setQ(''); }} style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: 9, border: 'none', background: 'transparent', borderRadius: 'var(--r-xs)', textAlign: 'left' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <Avatar name={p.name} size="sm" />
+                        <div style={{ flex: 1 }}><div style={{ fontWeight: 600, fontSize: 13.5 }}>{p.name}</div><div className="mono muted-3" style={{ fontSize: 11.5 }}>{p.cpf}</div></div>
+                        <span className="badge badge-gray">{p.planName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, padding: 12, background: 'var(--surface-2)', borderRadius: 'var(--r-md)' }}>
+                <Avatar name={patient.name} size="md" />
+                <div style={{ flex: 1 }}><div style={{ fontWeight: 650 }}>{patient.name}</div><div className="muted-3 mono" style={{ fontSize: 12 }}>{patient.cpf} · {patient.phone}</div></div>
+                <Button variant="ghost" size="sm" onClick={() => setPatientId('')}>Trocar</Button>
+              </div>
+            )}
+            <hr className="divider" style={{ margin: '22px 0' }} />
+            <div className="form-section-title"><span className="num">2</span>Procedimento e profissional</div>
+            <div className="form-grid" style={{ marginTop: 12 }}>
+              <Field label="Procedimento" span2>
+                <Select value={serviceId} onChange={e => setServiceId(e.target.value)}>
+                  <option value="">Selecione um procedimento...</option>
+                  {services.map(s => <option key={s.id} value={s.id}>{s.name} — {window.fmtMoney(s.price)} ({s.dur}min)</option>)}
+                </Select>
+              </Field>
+              <Field label="Dentista" required span2>
+                <Select value={dentistId} onChange={e => setDentistId(e.target.value)}>
+                  {dentists.map(d => <option key={d.id} value={d.id}>{d.name} — {d.spec}</option>)}
+                </Select>
+              </Field>
+            </div>
+            <hr className="divider" style={{ margin: '22px 0' }} />
+            <div className="form-section-title"><span className="num">3</span>Data e horário</div>
+            <div className="form-grid" style={{ marginTop: 12 }}>
+              <Field label="Data" required><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></Field>
+              <Field label="Horário" required><Input type="time" value={time} onChange={e => setTime(e.target.value)} /></Field>
+              <Field label="Status" span2>
+                <div className="radio-pills">
+                  {['agendado', 'confirmado', 'atendimento', 'concluido', 'cancelado'].map(s => (
+                    <button key={s} type="button" className={`radio-pill ${status === s ? 'active' : ''}`} onClick={() => setStatus(s)}>{window.DATA.statusByKey[s].label}</button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Observações" span2><Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Anotações sobre a consulta..." /></Field>
+            </div>
+          </Card>
+          <Card className="card-pad" style={{ position: 'sticky', top: 20 }}>
+            <h3 className="h3" style={{ marginBottom: 16 }}>Resumo</h3>
+            <div className="kv" style={{ gridTemplateColumns: '92px 1fr', fontSize: 13 }}>
+              <dt>Paciente</dt><dd>{patient ? patient.name : <span className="muted-3">—</span>}</dd>
+              <dt>Procedimento</dt><dd>{service ? service.name : <span className="muted-3">—</span>}</dd>
+              <dt>Dentista</dt><dd>{dentist ? dentist.name : '—'}</dd>
+              <dt>Data</dt><dd>{window.fmtDate(date)}</dd>
+              <dt>Horário</dt><dd className="mono">{time}{service ? ` (${service.dur}min)` : ''}</dd>
+              <dt>Convênio</dt><dd>{patient ? patient.planName : <span className="muted-3">—</span>}</dd>
+            </div>
+            <hr className="divider" style={{ margin: '16px 0' }} />
+            <Button variant="primary" className="btn-block" icon="check" onClick={save}>Salvar alterações</Button>
+            <Button variant="ghost" className="btn-block" style={{ marginTop: 8 }} onClick={() => navigate('agenda')}>Cancelar</Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  Object.assign(window, { Agenda, CreateAppointment, EditAppointment });
 })();
