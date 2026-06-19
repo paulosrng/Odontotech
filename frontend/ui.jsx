@@ -266,8 +266,26 @@
     );
   }
 
+  /* ---------- OdontotechLogo ---------- */
+  function OdontotechLogo({ size = 48, radius }) {
+    const r = radius !== undefined ? radius : Math.round(size * 0.22);
+    return (
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ display: 'block', flexShrink: 0 }}>
+        <rect width="48" height="48" rx={r} fill="url(#ot-logo-grad)" />
+        <path d="M24 9c-4 0-5.3 1.8-7.5 1.8-3.5 0-5 1.4-5 4.5 0 3.5 1.3 5.5 2 8.5.7 2.8.8 8.2 2.8 8.2 2.2 0 1.8-6.5 4-6.5h5.4c2.2 0 1.8 6.5 4 6.5 2 0 2.1-5.4 2.8-8.2.7-3 2-5 2-8.5 0-3.1-1.5-4.5-5-4.5C27.3 10.8 28 9 24 9z" fill="white" fillOpacity="0.95" />
+        <defs>
+          <linearGradient id="ot-logo-grad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#2E87EE" />
+            <stop offset="100%" stopColor="#1455A3" />
+          </linearGradient>
+        </defs>
+      </svg>
+    );
+  }
+
   Object.assign(window, {
     Avatar, Button, StatusBadge, Badge, Card, Field, Input, Select, Textarea, Switch,
     Segmented, Modal, Drawer, Stepper, EmptyState, Pagination, WhatsAppButton, Menu, ToastHost,
+    OdontotechLogo,
   });
 })();

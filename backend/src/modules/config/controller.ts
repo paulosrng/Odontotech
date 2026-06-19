@@ -23,22 +23,22 @@ export const configController = {
   },
 
   // GET /config/dentists
-  async listDentists(_req: Request, res: Response) {
-    const data = await configService.listDentists();
+  async listDentists(req: Request, res: Response) {
+    const data = await configService.listDentists(req.user!.clinicId);
     return ok(res, data);
   },
 
   // GET /config/users (ADMIN)
   async listUsers(req: Request, res: Response) {
     const q = listUsersQuerySchema.parse(req.query);
-    const data = await configService.listUsers(q);
+    const data = await configService.listUsers(q, req.user!.clinicId);
     return ok(res, data);
   },
 
   // POST /config/users (ADMIN)
   async createUser(req: Request, res: Response) {
     const input = createUserSchema.parse(req.body);
-    const data = await configService.createUser(input);
+    const data = await configService.createUser(req.user!.clinicId, input);
     return created(res, data, 'Usuário criado.');
   },
 

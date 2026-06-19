@@ -30,6 +30,7 @@ export const examController = {
     const q = listExamsQuerySchema.parse(req.query);
     const { page, limit, skip, take } = getPagination(req.query);
     const { data, total } = await examService.listAll({
+      clinicId: req.user!.clinicId,
       search: q.search ?? q.q,
       status: q.status,
       patientId: q.patientId,
@@ -43,7 +44,7 @@ export const examController = {
   async create(req: Request, res: Response) {
     const patientId = req.params.id ?? req.params.patientId;
     const input = createExamSchema.parse(req.body);
-    const data = await examService.create(patientId, input, getFiles(req));
+    const data = await examService.create(patientId, input, getFiles(req), req.user!.clinicId);
     return created(res, data, 'Exame cadastrado.');
   },
 

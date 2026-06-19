@@ -1,7 +1,6 @@
 // Odontotech — Prisma schema (SQLite)
-// NOTE: SQLite does not support native enums or scalar lists.
-//       Roles/statuses are stored as Strings (validated by Zod).
-//       Arrays (allergies, conditions) are stored as JSON strings.
+// NOTE: Roles/statuses are stored as Strings (validated by Zod).
+//       Arrays (allergies, conditions, serviceIds) are stored as JSON strings.
 
 datasource db {
   provider = "sqlite"
@@ -15,6 +14,7 @@ generator client {
 /// Users of the system. Dentists are Users with role = "DENTIST".
 model User {
   id           String   @id @default(cuid())
+  clinicId     String   @default("demo")
   name         String
   email        String   @unique
   passwordHash String
@@ -49,6 +49,7 @@ model RefreshToken {
 /// Insurance / dental plan (convênio).
 model Plan {
   id              String   @id @default(cuid())
+  clinicId        String   @default("demo")
   name            String
   coveragePercent Int      @default(0)
   status          String   @default("ativo") // ativo | inativo
@@ -65,6 +66,7 @@ model Plan {
 /// Patient (paciente).
 model Patient {
   id               String   @id @default(cuid())
+  clinicId         String   @default("demo")
   name             String
   cpf              String   @unique
   rg               String?
@@ -81,7 +83,7 @@ model Patient {
   plan             Plan?    @relation(fields: [planId], references: [id])
   allergies        String   @default("[]") // JSON array of strings
   conditions       String   @default("[]") // JSON array of strings
-  observations     String? // clinical notes (frontend "obs")
+  observations     String?  // clinical notes (frontend "obs")
   isMinor          Boolean  @default(false)
   responsibleParty String? // legal guardian name (frontend "responsible")
   responsiblePhone String?
@@ -99,6 +101,7 @@ model Patient {
 /// Dental service / procedure.
 model Service {
   id          String   @id @default(cuid())
+  clinicId    String   @default("demo")
   name        String
   description String?
   price       Float    @default(0)
@@ -117,6 +120,7 @@ model Service {
 /// exposes derived date/hour/min/dur fields for the calendar frontend.
 model Appointment {
   id          String   @id @default(cuid())
+  clinicId    String   @default("demo")
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   dentistId   String
@@ -155,6 +159,7 @@ model AppointmentService {
 /// Exam (radiografia, tomografia, etc.).
 model Exam {
   id          String   @id @default(cuid())
+  clinicId    String   @default("demo")
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   dentistId   String?

@@ -45,7 +45,8 @@
 
     const json = await parse(res);
     if (!res.ok || (json && json.success === false)) {
-      throw new Error((json && json.message) || `Erro ${res.status}`);
+      const fieldMsg = Array.isArray(json?.error) && json.error[0]?.message;
+      throw new Error(fieldMsg || (json && json.message) || `Erro ${res.status}`);
     }
     return json ? json.data : null;
   }
@@ -82,6 +83,11 @@
     isAuthed: () => !!tokens.access,
 
     // --- Auth ---
+    async register(clinicName, name, email, password) {
+      const data = await post('/auth/register', { clinicName, name, email, password });
+      tokens.set(data);
+      return data.user;
+    },
     async login(email, password) {
       const data = await post('/auth/login', { email, password });
       tokens.set(data);

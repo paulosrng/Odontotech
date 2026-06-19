@@ -9,6 +9,7 @@ export const serviceController = {
     const q = listServicesQuerySchema.parse(req.query);
     const { page, limit, skip, take } = getPagination(req.query);
     const { data, total } = await serviceService.list({
+      clinicId: req.user!.clinicId,
       search: q.search ?? q.q,
       category: q.category ?? q.cat,
       skip,
@@ -19,7 +20,7 @@ export const serviceController = {
 
   async create(req: Request, res: Response) {
     const input = createServiceSchema.parse(req.body);
-    const data = await serviceService.create(input);
+    const data = await serviceService.create(req.user!.clinicId, input);
     return created(res, data, 'Serviço cadastrado.');
   },
 

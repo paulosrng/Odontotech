@@ -80,19 +80,18 @@ export const configService = {
     return serializeSettings(settings);
   },
 
-  async listUsers(params: { role?: string; search?: string }): Promise<UserDTO[]> {
-    const where: Prisma.UserWhereInput = {};
+  async listUsers(params: { role?: string; search?: string }, clinicId: string): Promise<UserDTO[]> {
+    const where: Prisma.UserWhereInput = { clinicId };
     if (params.role && params.role !== 'all') where.role = params.role;
     if (params.search) where.OR = [{ name: { contains: params.search } }, { email: { contains: params.search } }];
     const users = await prisma.user.findMany({ where, orderBy: { name: 'asc' } });
     return users.map(serializeUser);
   },
 
-  async listDentists(): Promise<DentistDTO[]> {
-    // A "dentist" is any active user with a clinical specialty (role DENTIST,
-    // or an ADMIN who also practices, e.g. the clinic owner).
+  async listDentists(clinicId: string): Promise<DentistDTO[]> {
     const users = await prisma.user.findMany({
       where: {
+        clinicId,
         active: true,
         OR: [{ role: 'DENTIST' }, { specialty: { not: null } }],
       },
@@ -101,13 +100,14 @@ export const configService = {
     return users.map(serializeDentist);
   },
 
-  async createUser(input: CreateUserInput): Promise<UserDTO> {
+  async createUser(clinicId: string, input: CreateUserInput): Promise<UserDTO> {
     const existing = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
     if (existing) throw BadRequest('Já existe um usuário com este e-mail.');
 
     const passwordHash = await bcrypt.hash(input.password, 10);
     const user = await prisma.user.create({
       data: {
+        clinicId,
         name: input.name,
         email: input.email.toLowerCase(),
         passwordHash,

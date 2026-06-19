@@ -36,7 +36,7 @@
     const [authed, setAuthed] = useState(() => !!(window.API && window.API.isAuthed()));
     const [ready, setReady] = useState(false);
     const [bootError, setBootError] = useState(null);
-    const [publicView, setPublicView] = useState(() => localStorage.getItem('odt-public') || 'landing');
+    const [publicView, setPublicView] = useState(() => localStorage.getItem('odt-public') || 'about');
     const [collapsed, setCollapsed] = useState(t.sidebarCollapsed);
     const [route, setRoute] = useState(() => localStorage.getItem('odt-route') || 'dashboard');
     const [params, setParams] = useState(() => { try { return JSON.parse(localStorage.getItem('odt-params') || '{}'); } catch { return {}; } });
@@ -64,7 +64,7 @@
 
     const navigate = (to, p) => {
       if (to === '__logout') { window.API.logout(); setAuthed(false); setReady(false); setBootError(null); setPublicView('login'); window.toast && window.toast('Sessão encerrada'); return; }
-      if (to === 'landing' || to === 'login' || to === 'register') { setPublicView(to); return; }
+      if (to === 'landing' || to === 'login' || to === 'register' || (!authed && to === 'about')) { setPublicView(to); return; }
       setRoute(to); setParams(p || {});
     };
 
@@ -77,18 +77,22 @@
 
     /* ---------- Public (unauthenticated) ---------- */
     if (!authed) {
-      const onLogin = async (email, password) => {
-        try {
-          await window.API.login(email, password);
-          setRoute('dashboard'); setParams({}); setBootError(null); setReady(false); setAuthed(true);
-        } catch (err) {
-          window.toast && window.toast((err && err.message) || 'Falha no login', 'error');
+      const onLogin = async (email, password, preAuthed) => {
+        if (!preAuthed) {
+          try {
+            await window.API.login(email, password);
+          } catch (err) {
+            window.toast && window.toast((err && err.message) || 'Falha no login', 'error');
+            return;
+          }
         }
+        setRoute('dashboard'); setParams({}); setBootError(null); setReady(false); setAuthed(true);
       };
       const shared = { navigate, theme, toggleTheme, onLogin };
       let view;
       if (publicView === 'login') view = <window.Login {...shared} />;
       else if (publicView === 'register') view = <window.Register {...shared} />;
+      else if (publicView === 'about') view = <window.About navigate={navigate} theme={theme} toggleTheme={toggleTheme} isPublic={true} />;
       else view = <window.Landing navigate={navigate} theme={theme} toggleTheme={toggleTheme} />;
       return (<>{view}<ToastHost /><TweaksUI t={t} setTweak={setTweak} theme={theme} setTheme={setTheme} /></>);
     }
@@ -113,6 +117,7 @@
       plans: () => <window.Plans navigate={navigate} />,
       settings: () => <window.Settings navigate={navigate} params={params} t={t} setTweak={setTweak} theme={theme} setTheme={setTheme} />,
       design: () => <window.DesignSystem />,
+      about: () => <window.About navigate={navigate} />,
     };
     const Screen = screens[route] || screens.dashboard;
 

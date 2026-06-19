@@ -1,19 +1,26 @@
 /* Odontotech — Landing + Auth */
 (function () {
   const { useState } = React;
-  const { Icon, Button, Field, Input, Avatar } = window;
+  const { Icon, Button, Field, Input, Avatar, OdontotechLogo } = window;
 
   function PublicNav({ navigate, theme, toggleTheme }) {
     return (
       <div style={{ position: 'sticky', top: 0, zIndex: 30, background: 'color-mix(in srgb, var(--surface) 82%, transparent)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 28px', height: 68, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div className="sb-logo" style={{ width: 32, height: 32 }}><Icon name="tooth" size={19} stroke={1.9} /></div>
+          <OdontotechLogo size={32} radius={8} />
           <div style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em' }}>Odonto<b style={{ color: 'var(--primary-text)' }}>tech</b></div>
           <nav style={{ display: 'flex', gap: 4, marginLeft: 28 }} className="hide-collapse">
-            {['Recursos', 'Módulos', 'Preços', 'Suporte'].map(l => (
-              <a key={l} style={{ padding: '8px 14px', fontSize: 13.5, fontWeight: 500, color: 'var(--text-2)', borderRadius: 8, cursor: 'pointer' }}
+            {[
+              { label: 'Recursos', id: 'sec-recursos' },
+              { label: 'Módulos',  id: 'sec-modulos' },
+              { label: 'Preços',   id: 'sec-precos' },
+              { label: 'Sobre',    onClick: () => navigate('about') },
+            ].map(({ label, id, onClick }) => (
+              <a key={label}
+                 onClick={() => { if (onClick) { onClick(); return; } const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else navigate('landing'); }}
+                 style={{ padding: '8px 14px', fontSize: 13.5, fontWeight: 500, color: 'var(--text-2)', borderRadius: 8, cursor: 'pointer' }}
                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}
-                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}>{l}</a>
+                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}>{label}</a>
             ))}
           </nav>
           <div style={{ flex: 1 }} />
@@ -45,6 +52,7 @@
         {/* Hero */}
         <section style={{ maxWidth: 1180, margin: '0 auto', padding: '76px 28px 48px', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 56, alignItems: 'center' }}>
           <div>
+            <div style={{ marginBottom: 24 }}><OdontotechLogo size={56} radius={14} /></div>
             <div className="chip active" style={{ marginBottom: 22 }}><span className="bdot" style={{ background: 'var(--teal)' }} />Plataforma completa para clínicas odontológicas</div>
             <h1 style={{ fontSize: 50, lineHeight: 1.05, letterSpacing: '-0.035em', fontWeight: 760, margin: '0 0 20px' }}>
               A gestão da sua clínica,<br /><span style={{ color: 'var(--primary-text)' }}>simples e sob controle.</span>
@@ -100,7 +108,7 @@
         </section>
 
         {/* Stats strip */}
-        <section style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <section id="sec-modulos" style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
           <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 24 }}>
             {stats.map(s => (
               <div key={s.l} style={{ textAlign: 'center' }}>
@@ -112,7 +120,7 @@
         </section>
 
         {/* Features */}
-        <section style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 28px' }}>
+        <section id="sec-recursos" style={{ maxWidth: 1180, margin: '0 auto', padding: '72px 28px' }}>
           <div style={{ textAlign: 'center', marginBottom: 44 }}>
             <div className="eyebrow" style={{ marginBottom: 10 }}>Tudo em um só sistema</div>
             <h2 style={{ fontSize: 36, letterSpacing: '-0.03em', fontWeight: 740, margin: '0 0 12px' }}>Recursos pensados para o consultório</h2>
@@ -132,7 +140,7 @@
         </section>
 
         {/* CTA */}
-        <section style={{ maxWidth: 1180, margin: '0 auto 80px', padding: '0 28px' }}>
+        <section id="sec-precos" style={{ maxWidth: 1180, margin: '0 auto 80px', padding: '0 28px' }}>
           <div className="card" style={{ padding: '52px 44px', textAlign: 'center', background: 'linear-gradient(135deg, var(--primary), var(--primary-active))', border: 'none', color: '#fff' }}>
             <h2 style={{ fontSize: 32, letterSpacing: '-0.03em', fontWeight: 740, margin: '0 0 12px', color: '#fff' }}>Pronto para modernizar sua clínica?</h2>
             <p style={{ fontSize: 16.5, opacity: 0.92, maxWidth: 480, margin: '0 auto 26px' }}>Comece gratuitamente por 14 dias. Sem cartão de crédito, sem compromisso.</p>
@@ -164,7 +172,7 @@
         <div style={{ position: 'relative', background: 'linear-gradient(150deg, var(--primary), var(--primary-active))', padding: '48px 56px', display: 'flex', flexDirection: 'column', color: '#fff', overflow: 'hidden' }} className="auth-aside">
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 22px, rgba(255,255,255,0.04) 22px, rgba(255,255,255,0.04) 23px)' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => navigate('landing')}>
-            <div style={{ width: 40, height: 40, borderRadius: 11, background: 'rgba(255,255,255,0.18)', display: 'grid', placeItems: 'center' }}><Icon name="tooth" size={23} stroke={1.9} /></div>
+            <OdontotechLogo size={40} radius={11} />
             <div style={{ fontWeight: 740, fontSize: 21, letterSpacing: '-0.02em' }}>Odontotech</div>
           </div>
           <div style={{ position: 'relative', marginTop: 'auto' }}>
@@ -216,13 +224,11 @@
               </label>
               <a style={{ color: 'var(--primary-text)', fontWeight: 600, cursor: 'pointer' }}>Esqueci a senha</a>
             </div>
-            <Button variant="primary" size="lg" className="btn-block" type="submit" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</Button>
+            <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={busy} style={{ width: '100%' }}>
+              {busy ? 'Entrando…' : 'Entrar'}
+            </button>
           </form>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0', color: 'var(--text-3)', fontSize: 12.5 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} /> ou <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          </div>
-          <Button variant="secondary" size="lg" className="btn-block" onClick={() => onLogin(email, pwd)} icon="building" disabled={busy}>Entrar com SSO da clínica</Button>
-          <p className="muted-3" style={{ textAlign: 'center', fontSize: 12, marginTop: 14 }}>Demo: <b>admin@odontotech.com</b> / admin123 · ou marina.costa@odontotech.com.br / demo1234</p>
+          <p className="muted-3" style={{ textAlign: 'center', fontSize: 12, marginTop: 18 }}>Demo: <b>admin@odontotech.com</b> / admin123 · ou marina.costa@odontotech.com.br / demo1234</p>
           <p style={{ textAlign: 'center', marginTop: 26, fontSize: 14, color: 'var(--text-2)' }}>
             Novo por aqui? <a style={{ color: 'var(--primary-text)', fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate('register')}>Cadastre sua clínica</a>
           </p>
@@ -233,8 +239,21 @@
 
   function Register({ navigate, theme, toggleTheme, onLogin }) {
     const [form, setForm] = useState({ clinic: '', name: '', email: '', pwd: '' });
+    const [busy, setBusy] = useState(false);
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-    const submit = e => { e.preventDefault(); window.toast('Cadastro de novas clínicas indisponível na demo. Entre com um usuário existente.', 'info'); navigate('login'); };
+    const submit = async e => {
+      e.preventDefault();
+      if (busy) return;
+      setBusy(true);
+      try {
+        await window.API.register(form.clinic, form.name, form.email, form.pwd);
+        await onLogin(null, null, true);
+      } catch (err) {
+        window.toast(err.message || 'Erro ao criar conta.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    };
     return (
       <AuthShell theme={theme} toggleTheme={toggleTheme} navigate={navigate}>
         <div className="fade-in">
@@ -257,7 +276,7 @@
               <input type="checkbox" defaultChecked style={{ width: 15, height: 15, marginTop: 2, accentColor: 'var(--primary)' }} />
               Concordo com os <a style={{ color: 'var(--primary-text)', fontWeight: 600 }}>Termos de Uso</a> e a <a style={{ color: 'var(--primary-text)', fontWeight: 600 }}>Política de Privacidade (LGPD)</a>.
             </label>
-            <Button variant="primary" size="lg" className="btn-block" type="submit" iconRight="arrowRight">Criar conta da clínica</Button>
+            <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={busy} style={{ width: '100%' }}>{busy ? 'Criando conta…' : 'Criar conta da clínica'}</button>
           </form>
           <p style={{ textAlign: 'center', marginTop: 26, fontSize: 14, color: 'var(--text-2)' }}>
             Já tem conta? <a style={{ color: 'var(--primary-text)', fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate('login')}>Entrar</a>
@@ -267,5 +286,5 @@
     );
   }
 
-  Object.assign(window, { Landing, Login, Register });
+  Object.assign(window, { Landing, Login, Register, PublicNav });
 })();

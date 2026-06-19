@@ -1,6 +1,6 @@
 /* Odontotech — Configurações (clínica, equipe, agenda, aparência, design system) */
 (function () {
-  const { useState } = React;
+  const { useState, useRef } = React;
   const { Icon, Button, Card, Badge, Field, Input, Select, Textarea, Switch, Segmented, Modal, EmptyState, Menu, Avatar } = window;
 
   const PRIMARY_OPTIONS = ['#1C6DD0', '#0E7C86', '#3E5BD6', '#0A6E50', '#7A5AF0'];
@@ -34,7 +34,28 @@
   /* ================= CLÍNICA ================= */
   function ClinicPanel() {
     const [f, setF] = useState({ ...window.DATA.clinic });
+    const [logoSrc, setLogoSrc] = useState(() => window.DATA.clinic?.logo || localStorage.getItem('odt-logo') || null);
+    const fileRef = useRef(null);
     const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+    const handleLogoUpload = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target.result;
+        localStorage.setItem('odt-logo', dataUrl);
+        if (window.DATA.clinic) window.DATA.clinic.logo = dataUrl;
+        setLogoSrc(dataUrl);
+        window.toast('Logotipo atualizado!', 'success');
+      };
+      reader.readAsDataURL(file);
+    };
+    const handleLogoRemove = () => {
+      localStorage.removeItem('odt-logo');
+      if (window.DATA.clinic) window.DATA.clinic.logo = null;
+      setLogoSrc(null);
+      window.toast('Logotipo removido', 'info');
+    };
     const save = async () => {
       try {
         await window.API.updateSettings({ clinicName: f.name, unit: f.unit, cnpj: f.cnpj, phone: f.phone, email: f.email, address: f.address });
@@ -46,15 +67,19 @@
       <Card className="card-pad">
         <PanelHead title="Dados da clínica" desc="Informações exibidas em documentos, recibos e na identidade do sistema." />
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
-          <span className="stat-ico" style={{ width: 58, height: 58, borderRadius: 'var(--r-lg)', background: 'var(--primary-soft)', color: 'var(--primary-text)' }}>
-            <Icon name="tooth" size={28} />
-          </span>
+          <div style={{ width: 58, height: 58, borderRadius: 'var(--r-lg)', overflow: 'hidden', flexShrink: 0, background: logoSrc ? 'transparent' : 'var(--primary-soft)', display: 'grid', placeItems: 'center', color: 'var(--primary-text)' }}>
+            {logoSrc ? <img src={logoSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <Icon name="tooth" size={28} />}
+          </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{f.name || 'Odontotech'}</div>
             <div className="muted-3" style={{ fontSize: 12.5 }}>{f.unit}</div>
-            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8, paddingLeft: 0 }} onClick={() => window.toast('Upload de logo (demo)')}>
-              <Icon name="upload" size={15} /> Trocar logotipo
-            </button>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+              <button className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }} onClick={() => fileRef.current.click()}>
+                <Icon name="upload" size={15} /> Trocar logotipo
+              </button>
+              {logoSrc && <button className="btn btn-ghost btn-sm" style={{ color: 'var(--rose-text)' }} onClick={handleLogoRemove}><Icon name="trash" size={14} /> Remover</button>}
+            </div>
           </div>
         </div>
         <div className="form-grid">

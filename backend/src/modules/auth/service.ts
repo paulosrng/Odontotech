@@ -4,13 +4,14 @@ import crypto from 'crypto';
 import type { User } from '@prisma/client';
 import { prisma } from '../../shared/prisma';
 import { env } from '../../config/env';
-import { Unauthorized } from '../../shared/errors';
+import { Conflict, Unauthorized } from '../../shared/errors';
 import type { AuthResult, PublicUser, TokenPair } from './types';
-import type { LoginInput } from './schema';
+import type { LoginInput, RegisterInput } from './schema';
 
 function toPublicUser(user: User): PublicUser {
   return {
     id: user.id,
+    clinicId: user.clinicId,
     name: user.name,
     email: user.email,
     role: user.role,
@@ -22,7 +23,7 @@ function toPublicUser(user: User): PublicUser {
 
 function signAccessToken(user: User): string {
   return jwt.sign(
-    { sub: user.id, email: user.email, role: user.role, name: user.name },
+    { sub: user.id, email: user.email, role: user.role, name: user.name, clinicId: user.clinicId },
     env.jwt.accessSecret,
     { expiresIn: env.jwt.accessExpires } as jwt.SignOptions,
   );
@@ -43,6 +44,27 @@ async function issueTokens(user: User): Promise<TokenPair> {
 }
 
 export const authService = {
+  async register(input: RegisterInput): Promise<AuthResult> {
+    const existing = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
+    if (existing) throw Conflict('E-mail já cadastrado.');
+
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    // Create user first, then set clinicId = user.id so each clinic has its own tenant key.
+    let user = await prisma.user.create({
+      data: { name: input.name, email: input.email.toLowerCase(), passwordHash, role: 'ADMIN' },
+    });
+    user = await prisma.user.update({ where: { id: user.id }, data: { clinicId: user.id } });
+
+    await prisma.clinicSettings.upsert({
+      where: { id: 'singleton' },
+      update: { clinicName: input.clinicName },
+      create: { id: 'singleton', clinicName: input.clinicName },
+    });
+
+    const tokens = await issueTokens(user);
+    return { ...tokens, user: toPublicUser(user) };
+  },
+
   async login(input: LoginInput): Promise<AuthResult> {
     const user = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
     if (!user || !user.active) throw Unauthorized('Credenciais inválidas.');

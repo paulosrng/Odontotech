@@ -8,13 +8,13 @@ export const planController = {
   async list(req: Request, res: Response) {
     const q = listPlansQuerySchema.parse(req.query);
     const { page, limit, skip, take } = getPagination(req.query);
-    const { data, total } = await planService.list({ status: q.status, skip, take });
+    const { data, total } = await planService.list({ clinicId: req.user!.clinicId, status: q.status, skip, take });
     return paginated(res, data, total, page, limit);
   },
 
   async create(req: Request, res: Response) {
     const input = createPlanSchema.parse(req.body);
-    const data = await planService.create(input);
+    const data = await planService.create(req.user!.clinicId, input);
     return created(res, data, 'Plano cadastrado.');
   },
 

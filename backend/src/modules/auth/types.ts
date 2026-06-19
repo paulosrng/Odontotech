@@ -1,5 +1,6 @@
 export interface PublicUser {
   id: string;
+  clinicId: string;
   name: string;
   email: string;
   role: string;

@@ -18,6 +18,7 @@
     ]},
     { group: 'Sistema', items: [
       { key: 'settings', route: 'settings', icon: 'settings', label: 'Configurações' },
+      { key: 'about',    route: 'about',    icon: 'info',     label: 'Sobre Nós' },
     ]},
   ];
 
@@ -30,6 +31,7 @@
     services: 'services',
     plans: 'plans',
     settings: 'settings', design: 'settings',
+    about: 'about',
   };
 
   function Sidebar({ route, navigate, collapsed, setCollapsed }) {
@@ -38,7 +40,12 @@
     return (
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
         <div className="sb-brand">
-          <div className="sb-logo"><Icon name="tooth" size={20} stroke={1.9} /></div>
+          <div className="sb-logo">
+            {(window.DATA.clinic.logo || localStorage.getItem('odt-logo'))
+              ? <img src={window.DATA.clinic.logo || localStorage.getItem('odt-logo')} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit', display: 'block' }} alt="" />
+              : <Icon name="tooth" size={20} stroke={1.9} />
+            }
+          </div>
           <div className="sb-brand-name">Odonto<b>tech</b></div>
         </div>
         <nav className="sb-nav">
@@ -90,7 +97,7 @@
       patients: 'Gestão de Pacientes', 'new-patient': 'Novo Paciente', 'patient-detail': 'Ficha do Paciente',
       'edit-patient': 'Editar Paciente', exams: 'Exames', 'exam-detail': 'Detalhe do Exame',
       services: 'Serviços Odontológicos', plans: 'Gestão de Planos',
-      settings: 'Configurações', design: 'Design System',
+      settings: 'Configurações', design: 'Design System', about: 'Sobre Nós',
     };
 
     return (

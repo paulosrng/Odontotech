@@ -20,8 +20,8 @@ export function serializeService(s: Service): ServiceDTO {
 }
 
 export const serviceService = {
-  async list(params: { search?: string; category?: string; skip: number; take: number }) {
-    const where: Prisma.ServiceWhereInput = {};
+  async list(params: { clinicId: string; search?: string; category?: string; skip: number; take: number }) {
+    const where: Prisma.ServiceWhereInput = { clinicId: params.clinicId };
     if (params.search) where.name = { contains: params.search };
     if (params.category && params.category !== 'all') where.category = params.category;
 
@@ -32,8 +32,8 @@ export const serviceService = {
     return { data: rows.map(serializeService), total };
   },
 
-  async create(data: { name: string; description: string | null; price: number; duration: number; category: string }) {
-    const s = await prisma.service.create({ data });
+  async create(clinicId: string, data: { name: string; description: string | null; price: number; duration: number; category: string }) {
+    const s = await prisma.service.create({ data: { ...data, clinicId } });
     return serializeService(s);
   },
 

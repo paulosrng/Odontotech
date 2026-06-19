@@ -9,6 +9,7 @@ export const patientController = {
     const q = listPatientsQuerySchema.parse(req.query);
     const { page, limit, skip, take } = getPagination(req.query);
     const { data, total } = await patientService.list({
+      clinicId: req.user!.clinicId,
       search: q.search ?? q.q,
       status: q.status,
       planId: q.planId,
@@ -27,7 +28,7 @@ export const patientController = {
 
   async create(req: Request, res: Response) {
     const input = createPatientSchema.parse(req.body);
-    const data = await patientService.create(input);
+    const data = await patientService.create(input, req.user!.clinicId);
     return created(res, data, 'Paciente cadastrado com sucesso.');
   },
 

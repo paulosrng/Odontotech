@@ -64,6 +64,7 @@ async function resolveDateTime(input: { datetime?: Date; date?: string; time?: s
 
 export const appointmentService = {
   async list(params: {
+    clinicId: string;
     date?: string;
     dentistId?: string;
     status?: string;
@@ -71,7 +72,7 @@ export const appointmentService = {
     skip: number;
     take: number;
   }) {
-    const where: Prisma.AppointmentWhereInput = {};
+    const where: Prisma.AppointmentWhereInput = { clinicId: params.clinicId };
     if (params.date) where.datetime = dayRange(params.date);
     if (params.dentistId && params.dentistId !== 'all') where.dentistId = params.dentistId;
     if (params.status && params.status !== 'all') where.status = params.status;
@@ -85,10 +86,10 @@ export const appointmentService = {
   },
 
   /** Agenda range — returns every appointment between start and end (no pagination). */
-  async agenda(params: { start: string; end: string; dentistId?: string }) {
+  async agenda(params: { clinicId: string; start: string; end: string; dentistId?: string }) {
     const { gte } = dayRange(params.start);
     const { lt } = dayRange(params.end);
-    const where: Prisma.AppointmentWhereInput = { datetime: { gte, lt } };
+    const where: Prisma.AppointmentWhereInput = { clinicId: params.clinicId, datetime: { gte, lt } };
     if (params.dentistId && params.dentistId !== 'all') where.dentistId = params.dentistId;
 
     const rows = await prisma.appointment.findMany({ where, include, orderBy: { datetime: 'asc' } });
@@ -101,7 +102,7 @@ export const appointmentService = {
     return serialize(a);
   },
 
-  async create(input: CreateAppointmentInput) {
+  async create(clinicId: string, input: CreateAppointmentInput) {
     const datetime = await resolveDateTime(input);
 
     // Default duration from the chosen service if not provided.
@@ -113,6 +114,7 @@ export const appointmentService = {
 
     const created = await prisma.appointment.create({
       data: {
+        clinicId,
         patientId: input.patientId,
         dentistId: input.dentistId,
         serviceId: input.serviceId || null,

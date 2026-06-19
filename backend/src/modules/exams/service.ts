@@ -69,8 +69,8 @@ export const examService = {
     return { data: rows.map(serialize), total };
   },
 
-  async listAll(params: { search?: string; status?: string; patientId?: string; skip: number; take: number }) {
-    const where: Prisma.ExamWhereInput = {};
+  async listAll(params: { clinicId: string; search?: string; status?: string; patientId?: string; skip: number; take: number }) {
+    const where: Prisma.ExamWhereInput = { clinicId: params.clinicId };
     if (params.patientId) where.patientId = params.patientId;
     if (params.status && params.status !== 'all') where.status = params.status;
     if (params.search) {
@@ -86,7 +86,7 @@ export const examService = {
     return { data: rows.map(serialize), total };
   },
 
-  async create(patientId: string, input: CreateExamInput, files: UploadedFile[] = []) {
+  async create(patientId: string, input: CreateExamInput, files: UploadedFile[] = [], clinicId = 'demo') {
     // ensure patient exists
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (!patient) throw NotFound('Paciente');
@@ -94,6 +94,7 @@ export const examService = {
     const fileRecords = toFileRecords(files);
     const exam = await prisma.exam.create({
       data: {
+        clinicId,
         patientId,
         dentistId: input.dentistId || null,
         type: input.type,

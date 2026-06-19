@@ -5,6 +5,7 @@ import { Forbidden, Unauthorized } from '../shared/errors';
 
 export interface AuthUser {
   id: string;
+  clinicId: string;
   email: string;
   role: string;
   name: string;
@@ -22,6 +23,7 @@ declare global {
 
 export interface AccessTokenPayload {
   sub: string;
+  clinicId: string;
   email: string;
   role: string;
   name: string;
@@ -36,7 +38,13 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
   const token = header.slice(7).trim();
   try {
     const payload = jwt.verify(token, env.jwt.accessSecret) as AccessTokenPayload;
-    req.user = { id: payload.sub, email: payload.email, role: payload.role, name: payload.name };
+    req.user = {
+      id: payload.sub,
+      clinicId: payload.clinicId || 'demo',
+      email: payload.email,
+      role: payload.role,
+      name: payload.name,
+    };
     next();
   } catch (err: any) {
     if (err?.name === 'TokenExpiredError') throw Unauthorized('Token de acesso expirado.');

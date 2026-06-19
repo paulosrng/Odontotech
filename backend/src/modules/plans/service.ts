@@ -24,8 +24,8 @@ export function serializePlan(p: Plan): PlanDTO {
 }
 
 export const planService = {
-  async list(params: { status?: string; skip: number; take: number }) {
-    const where: Prisma.PlanWhereInput = {};
+  async list(params: { clinicId: string; status?: string; skip: number; take: number }) {
+    const where: Prisma.PlanWhereInput = { clinicId: params.clinicId };
     if (params.status && params.status !== 'all') where.status = params.status;
 
     const [rows, total] = await Promise.all([
@@ -35,7 +35,7 @@ export const planService = {
     return { data: rows.map(serializePlan), total };
   },
 
-  async create(data: {
+  async create(clinicId: string, data: {
     name: string;
     coveragePercent: number;
     status: string;
@@ -43,7 +43,7 @@ export const planService = {
     color: string | null;
     serviceCount: number;
   }) {
-    const p = await prisma.plan.create({ data });
+    const p = await prisma.plan.create({ data: { ...data, clinicId } });
     return serializePlan(p);
   },
 

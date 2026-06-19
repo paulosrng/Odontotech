@@ -77,6 +77,7 @@ function buildData(input: Partial<CreatePatientInput>): Prisma.PatientUncheckedC
 
 export const patientService = {
   async list(params: {
+    clinicId: string;
     search?: string;
     status?: string;
     planId?: string;
@@ -85,7 +86,7 @@ export const patientService = {
     skip: number;
     take: number;
   }) {
-    const where: Prisma.PatientWhereInput = {};
+    const where: Prisma.PatientWhereInput = { clinicId: params.clinicId };
     if (params.search) {
       where.OR = [
         { name: { contains: params.search } },
@@ -163,9 +164,9 @@ export const patientService = {
     };
   },
 
-  async create(input: CreatePatientInput): Promise<PatientDTO> {
+  async create(input: CreatePatientInput, clinicId: string): Promise<PatientDTO> {
     const created = await prisma.patient.create({
-      data: buildData(input) as Prisma.PatientUncheckedCreateInput,
+      data: { ...(buildData(input) as Prisma.PatientUncheckedCreateInput), clinicId },
       include: { plan: true },
     });
     return serialize(created, { consultations: 0, lastVisit: null, nextVisit: null });

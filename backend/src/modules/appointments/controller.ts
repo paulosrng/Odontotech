@@ -15,13 +15,13 @@ export const appointmentController = {
   async list(req: Request, res: Response) {
     const q = listAppointmentsQuerySchema.parse(req.query);
     const { page, limit, skip, take } = getPagination(req.query);
-    const { data, total } = await appointmentService.list({ ...q, skip, take });
+    const { data, total } = await appointmentService.list({ clinicId: req.user!.clinicId, ...q, skip, take });
     return paginated(res, data, total, page, limit);
   },
 
   async agenda(req: Request, res: Response) {
     const q = agendaQuerySchema.parse(req.query);
-    const data = await appointmentService.agenda(q);
+    const data = await appointmentService.agenda({ clinicId: req.user!.clinicId, ...q });
     return ok(res, data);
   },
 
@@ -32,7 +32,7 @@ export const appointmentController = {
 
   async create(req: Request, res: Response) {
     const input = createAppointmentSchema.parse(req.body);
-    const data = await appointmentService.create(input);
+    const data = await appointmentService.create(req.user!.clinicId, input);
     return created(res, data, 'Consulta agendada com sucesso.');
   },
 

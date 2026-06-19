@@ -1,9 +1,15 @@
 import { Request, Response } from 'express';
 import { ok } from '../../shared/response';
 import { authService } from './service';
-import { loginSchema, logoutSchema, refreshSchema } from './schema';
+import { loginSchema, logoutSchema, refreshSchema, registerSchema } from './schema';
 
 export const authController = {
+  async register(req: Request, res: Response) {
+    const input = registerSchema.parse(req.body);
+    const result = await authService.register(input);
+    return ok(res, result, 'Conta criada com sucesso.');
+  },
+
   async login(req: Request, res: Response) {
     const input = loginSchema.parse(req.body);
     const result = await authService.login(input);

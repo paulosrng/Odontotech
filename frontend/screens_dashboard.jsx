@@ -38,7 +38,11 @@
   function Dashboard({ navigate }) {
     const { appts, today, activity, patients, dentists, clinic } = window.DATA;
     const todays = useMemo(() => appts.filter(a => a.date === today).sort((a, b) => (a.hour * 60 + a.min) - (b.hour * 60 + b.min)), [appts]);
-    const hour = 13;
+    const now = new Date();
+    const hour = now.getHours();
+    const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+    const userName = clinic.user?.name || 'bem-vindo';
+    const dateLabel = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const stats = [
       { icon: 'users', color: 'blue', label: 'Total de pacientes', value: patients.length, delta: `${patients.filter(p => p.status === 'ativo').length} ativos`, deltaDir: 'up', hint: 'Base cadastrada' },
       { icon: 'calendar', color: 'teal', label: 'Consultas hoje', value: todays.length, delta: `${todays.filter(a => a.status === 'confirmado').length} confirmadas`, deltaDir: 'flat', hint: `${todays.filter(a => a.status === 'concluido').length} concluídas até agora` },
@@ -46,13 +50,12 @@
       { icon: 'dollar', color: 'green', label: 'Faturamento (mês)', value: 'R$ 84,2k', delta: '+11,8%', deltaDir: 'up', hint: 'Meta: R$ 90k' },
     ];
 
-    const greeting = 'Boa tarde';
     return (
       <div className="page fade-in">
         <div className="page-head">
           <div>
-            <h1 className="h1">{greeting}, Dra. Marina 👋</h1>
-            <div className="sub">Terça-feira, 3 de junho de 2026 · {clinic.unit}</div>
+            <h1 className="h1">{greeting}, {userName} 👋</h1>
+            <div className="sub" style={{ textTransform: 'capitalize' }}>{dateLabel}{clinic.unit ? ` · ${clinic.unit}` : ''}</div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <Button variant="secondary" icon="calendar" onClick={() => navigate('agenda')}>Ver agenda</Button>
