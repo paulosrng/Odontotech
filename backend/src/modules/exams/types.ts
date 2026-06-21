@@ -2,8 +2,8 @@ export interface ExamFileDTO {
   id: string;
   filename: string;
   originalName: string;
-  url: string; // public URL path
-  path: string;
+  url: string | null; // short-lived signed URL (null if Storage unavailable)
+  path: string; // object path within the Storage bucket
   mimeType: string | null;
   size: number | null;
 }

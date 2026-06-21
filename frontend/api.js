@@ -2,9 +2,10 @@
    Connects the static frontend to the Express/Prisma backend.
    Loaded after data.js (so window.DATA defaults exist) and before the screens. */
 (function () {
-  // Same-origin ('') when served by the backend on :4000; otherwise target it directly.
-  // Override with localStorage 'odt-api' if the backend runs elsewhere.
-  const BASE = localStorage.getItem('odt-api') ?? (location.port === '4000' ? '' : 'http://localhost:4000');
+  // The frontend is served by the same origin as the API (locally by the
+  // backend on :4000, in production by the Vercel function), so default to
+  // same-origin (''). Override with localStorage 'odt-api' to point elsewhere.
+  const BASE = localStorage.getItem('odt-api') ?? '';
 
   const tokens = {
     get access() { return localStorage.getItem('odt-token'); },

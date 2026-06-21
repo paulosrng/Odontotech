@@ -1,25 +1,36 @@
 {
   "name": "odontotech-backend",
   "version": "1.0.0",
-  "description": "Production-ready REST API for the Odontotech dental clinic management system (Express + Prisma + SQLite).",
-  "main": "dist/server.js",
+  "description": "Production-ready REST API for the Odontotech dental clinic management system (Express + Prisma + PostgreSQL/Supabase).",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
+    "setup:storage": "ts-node scripts/setup-storage.ts",
     "db:reset": "prisma migrate reset --force"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
-  "keywords": ["odontotech", "dental", "clinic", "express", "prisma", "sqlite"],
+  "keywords": [
+    "odontotech",
+    "dental",
+    "clinic",
+    "express",
+    "prisma",
+    "sqlite"
+  ],
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.108.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

@@ -1,17 +1,27 @@
-import fs from 'fs';
 import path from 'path';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../shared/prisma';
 import { NotFound } from '../../shared/errors';
 import { toDateString } from '../../shared/dates';
-import { env } from '../../config/env';
+import { uploadObject, signedUrl, deleteObjects } from '../../shared/storage';
 import type { ExamDTO } from './types';
 import type { CreateExamInput, UpdateExamInput } from './schema';
 
 const include = { patient: true, dentist: true, files: true } satisfies Prisma.ExamInclude;
 type ExamFull = Prisma.ExamGetPayload<{ include: typeof include }>;
 
-function serialize(e: ExamFull): ExamDTO {
+async function serialize(e: ExamFull): Promise<ExamDTO> {
+  const attachments = await Promise.all(
+    e.files.map(async (f) => ({
+      id: f.id,
+      filename: f.filename,
+      originalName: f.originalName,
+      url: await signedUrl(f.path),
+      path: f.path,
+      mimeType: f.mimeType,
+      size: f.size,
+    })),
+  );
   return {
     id: e.id,
     patientId: e.patientId,
@@ -25,37 +35,41 @@ function serialize(e: ExamFull): ExamDTO {
     status: e.status,
     filePath: e.filePath,
     files: e.files.length,
-    attachments: e.files.map((f) => ({
-      id: f.id,
-      filename: f.filename,
-      originalName: f.originalName,
-      url: `/${f.path.replace(/\\/g, '/')}`,
-      path: f.path,
-      mimeType: f.mimeType,
-      size: f.size,
-    })),
+    attachments,
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   };
 }
 
+const serializeMany = (rows: ExamFull[]) => Promise.all(rows.map(serialize));
+
 export interface UploadedFile {
-  filename: string;
   originalname: string;
-  path: string;
+  buffer: Buffer;
   mimetype: string;
   size: number;
 }
 
-function toFileRecords(examFiles: UploadedFile[]) {
-  return examFiles.map((f) => ({
-    filename: f.filename,
-    originalName: f.originalname,
-    // store a relative path (uploads/xyz.jpg) so it can be served statically
-    path: path.join(env.uploads.dir, f.filename).replace(/\\/g, '/'),
-    mimeType: f.mimetype,
-    size: f.size,
-  }));
+/** Upload each incoming file to Supabase Storage and build the DB rows. */
+async function uploadAndBuildRecords(examFiles: UploadedFile[]) {
+  const records = [];
+  for (const f of examFiles) {
+    const ext = path.extname(f.originalname).toLowerCase();
+    const base = path
+      .basename(f.originalname, ext)
+      .replace(/[^a-zA-Z0-9-_]/g, '_')
+      .slice(0, 40);
+    const objectName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${base}${ext}`;
+    await uploadObject({ buffer: f.buffer, objectName, mimeType: f.mimetype });
+    records.push({
+      filename: objectName,
+      originalName: f.originalname,
+      path: objectName, // object path within the Storage bucket
+      mimeType: f.mimetype,
+      size: f.size,
+    });
+  }
+  return records;
 }
 
 export const examService = {
@@ -66,7 +80,7 @@ export const examService = {
       prisma.exam.findMany({ where, include, orderBy: { date: 'desc' }, skip: params.skip, take: params.take }),
       prisma.exam.count({ where }),
     ]);
-    return { data: rows.map(serialize), total };
+    return { data: await serializeMany(rows), total };
   },
 
   async listAll(params: { clinicId: string; search?: string; status?: string; patientId?: string; skip: number; take: number }) {
@@ -83,7 +97,7 @@ export const examService = {
       prisma.exam.findMany({ where, include, orderBy: { date: 'desc' }, skip: params.skip, take: params.take }),
       prisma.exam.count({ where }),
     ]);
-    return { data: rows.map(serialize), total };
+    return { data: await serializeMany(rows), total };
   },
 
   async create(patientId: string, input: CreateExamInput, files: UploadedFile[] = [], clinicId = 'demo') {
@@ -91,7 +105,7 @@ export const examService = {
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (!patient) throw NotFound('Paciente');
 
-    const fileRecords = toFileRecords(files);
+    const fileRecords = await uploadAndBuildRecords(files);
     const exam = await prisma.exam.create({
       data: {
         clinicId,
@@ -114,7 +128,7 @@ export const examService = {
     const existing = await prisma.exam.findUnique({ where: { id }, include });
     if (!existing) throw NotFound('Exame');
 
-    const fileRecords = toFileRecords(files);
+    const fileRecords = await uploadAndBuildRecords(files);
     const data: Prisma.ExamUncheckedUpdateInput = {};
     if (input.dentistId !== undefined) data.dentistId = input.dentistId || null;
     if (input.type !== undefined) data.type = input.type;
@@ -135,11 +149,8 @@ export const examService = {
     const exam = await prisma.exam.findUnique({ where: { id }, include: { files: true } });
     if (!exam) throw NotFound('Exame');
 
-    // best-effort delete of physical files
-    for (const f of exam.files) {
-      const abs = path.resolve(process.cwd(), f.path);
-      fs.promises.unlink(abs).catch(() => undefined);
-    }
+    // best-effort delete of the stored objects, then the DB rows
+    await deleteObjects(exam.files.map((f) => f.path));
     await prisma.exam.delete({ where: { id } });
   },
 };

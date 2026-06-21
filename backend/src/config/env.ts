@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-import path from 'path';
 
 dotenv.config();
 
@@ -23,16 +22,28 @@ export const env = {
   },
 
   cors: {
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173')
+    // '*' (or empty) allows any origin — handy when the API and frontend are
+    // served same-origin on Vercel. Otherwise pass a comma-separated list.
+    origin: (process.env.CORS_ORIGIN || '*')
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean),
   },
 
   uploads: {
-    dir: process.env.UPLOAD_DIR || 'uploads',
     maxBytes: parseInt(process.env.MAX_UPLOAD_MB || '20', 10) * 1024 * 1024,
-    absoluteDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR || 'uploads'),
+  },
+
+  // Supabase Storage — used to persist exam attachments (works on serverless,
+  // where the local filesystem is ephemeral/read-only). The service-role key
+  // stays server-side only.
+  supabase: {
+    url: process.env.SUPABASE_URL || '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    bucket: process.env.SUPABASE_STORAGE_BUCKET || 'exams',
+    get configured() {
+      return Boolean(this.url && this.serviceRoleKey);
+    },
   },
 
   isProd: process.env.NODE_ENV === 'production',

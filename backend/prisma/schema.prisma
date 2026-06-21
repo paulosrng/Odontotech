@@ -1,14 +1,21 @@
-// Odontotech — Prisma schema (SQLite)
+// Odontotech — Prisma schema (PostgreSQL / Supabase)
 // NOTE: Roles/statuses are stored as Strings (validated by Zod).
 //       Arrays (allergies, conditions, serviceIds) are stored as JSON strings.
+//
+// On Supabase + serverless we connect through the transaction pooler
+// (DATABASE_URL, port 6543) at runtime and the direct connection
+// (DIRECT_URL, port 5432) for migrations.
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" for local dev; rhel-* is the engine AWS Lambda (Vercel) needs.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 /// Users of the system. Dentists are Users with role = "DENTIST".

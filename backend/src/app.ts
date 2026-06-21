@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
 import { env } from './config/env';
 import { ok } from './shared/response';
@@ -21,9 +22,13 @@ export function createApp() {
   const app = express();
 
   // --- Core middleware -------------------------------------------------
+  // With credentials, the cors package can't use a literal '*'; `true` instead
+  // reflects the request origin (correct for same-origin and dev). A concrete
+  // list locks it down to those origins.
+  const corsOrigin = env.cors.origin.includes('*') ? true : env.cors.origin;
   app.use(
     cors({
-      origin: env.cors.origin,
+      origin: corsOrigin,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
@@ -32,16 +37,16 @@ export function createApp() {
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true }));
 
-  // Serve uploaded files statically (e.g. /uploads/xyz.jpg)
-  app.use(`/${env.uploads.dir}`, express.static(env.uploads.absoluteDir));
+  // Exam files live in Supabase Storage now (served via signed URLs), so there
+  // is no local /uploads route to expose here.
 
   // Serve the static frontend (mock SPA) so the whole app runs same-origin
   // from a single process: http://localhost:PORT/Odontotech.html
-  // Resolved from __dirname (not process.cwd()) so it works regardless of the
-  // directory the server is launched from. __dirname is backend/src (ts-node)
-  // or backend/dist (compiled); both are one level below backend/.
-  const frontendDir = path.resolve(__dirname, '..', '..', 'frontend');
-  app.use(express.static(frontendDir));
+  // __dirname differs across environments (backend/src under ts-node,
+  // backend/dist/src compiled, /var/task/... on Vercel), so probe candidates
+  // and use the first that exists. FRONTEND_DIR overrides everything.
+  const frontendDir = resolveFrontendDir();
+  if (frontendDir) app.use(express.static(frontendDir));
 
   // --- Health / root ---------------------------------------------------
   app.get('/health', (_req, res) => ok(res, { status: 'ok', uptime: process.uptime() }));
@@ -71,4 +76,17 @@ export function createApp() {
   app.use(errorHandler);
 
   return app;
+}
+
+/** Locate the static frontend folder across dev/compiled/serverless layouts. */
+function resolveFrontendDir(): string | null {
+  const candidates = [
+    process.env.FRONTEND_DIR,
+    path.resolve(__dirname, '..', '..', 'frontend'), // ts-node: backend/src -> repo/frontend
+    path.resolve(__dirname, '..', '..', '..', 'frontend'), // compiled: backend/dist/src -> repo/frontend
+    path.resolve(process.cwd(), 'frontend'),
+    path.resolve(process.cwd(), '..', 'frontend'),
+  ].filter(Boolean) as string[];
+
+  return candidates.find((dir) => fs.existsSync(path.join(dir, 'Odontotech.html'))) ?? null;
 }

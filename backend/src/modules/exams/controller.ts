@@ -7,9 +7,8 @@ import { createExamSchema, listExamsQuerySchema, updateExamSchema } from './sche
 function getFiles(req: Request): UploadedFile[] {
   const files = (req.files as Express.Multer.File[] | undefined) ?? [];
   return files.map((f) => ({
-    filename: f.filename,
     originalname: f.originalname,
-    path: f.path,
+    buffer: f.buffer,
     mimetype: f.mimetype,
     size: f.size,
   }));

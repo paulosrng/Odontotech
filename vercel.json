@@ -1,17 +1,17 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "cd backend && npm install && npm run build",
-  "outputDirectory": "backend/dist",
-  "functions": {
-    "backend/dist/src/server.js": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 30
-    }
-  },
+  "builds": [
+    { "src": "frontend/**", "use": "@vercel/static" },
+    { "src": "backend/src/serverless.ts", "use": "@vercel/node" }
+  ],
   "routes": [
+    { "src": "/", "dest": "/frontend/Odontotech.html" },
     {
-      "src": "/(.*)",
-      "dest": "backend/dist/src/server.js"
-    }
+      "src": "/(auth|patients|appointments|services|plans|exams|config|dentists|health|api)(/.*)?",
+      "dest": "/backend/src/serverless.ts"
+    },
+    { "src": "/(.+\\.(?:js|jsx|css|png|jpg|jpeg|svg|ico|webp|woff2?|map|json))", "dest": "/frontend/$1" },
+    { "src": "/(.*)", "dest": "/frontend/$1" }
   ]
 }
